@@ -21,7 +21,7 @@ def register_user(api_url, api_key, customer_id, customer_info, membership_statu
         return {"error": str(e)}
 
 def display_registration_form():
-    st.title("WP Ultimo Registration App")
+    st.title("WP AI Registration App")
 
     # Move API URL and API Key to the sidebar
     with st.sidebar:
