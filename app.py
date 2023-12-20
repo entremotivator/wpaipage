@@ -52,6 +52,25 @@ def register_user(api_url, api_key, customer_info, site_url, site_title, members
     except requests.exceptions.RequestException as e:
         return {"error": str(e)}
 
+def display_registration_form():
+    api_url = st.text_input("API URL:")
+    api_key = st.text_input("API Key:", type="password")
+
+    user_id = st.number_input("User ID:")
+    username = st.text_input("Username:")
+    password = st.text_input("Password:", type="password")
+    email = st.text_input("Email:")
+
+    customer_info = {"user_id": user_id, "username": username, "password": password, "email": email}
+
+    membership_status = st.selectbox("Membership Status", ["pending", "active", "trialing", "expired", "on-hold", "canceled"])
+    payment_status = st.selectbox("Payment Status", ["pending", "completed", "refunded", "partially-refunded", "partially-paid", "failed", "canceled"])
+
+    site_url = st.text_input("Site URL:")
+    site_title = st.text_input("Site Title:")
+
+    return api_url, api_key, customer_info, site_url, site_title, membership_status, payment_status
+
 # Apply some basic styling using HTML and CSS
 st.markdown("""
     <style>
