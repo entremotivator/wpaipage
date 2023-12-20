@@ -3,7 +3,7 @@ import requests
 from ftplib import FTP
 from woocommerce import API
 import random
-import openai
+
 
 # Set your OpenAI API key here
 openai.api_key = "YOUR_OPENAI_API_KEY"
