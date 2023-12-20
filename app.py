@@ -180,12 +180,12 @@ def main():
             # Create Divi page for each section
             if st.button(f"Create Divi Page for Section {i + 1}"):
                 with st.spinner(f"Creating Divi Page for Section {i + 1}..."):
-                    page_id, page_content = create_divi_page(openai_key, page_title, uploaded_file)
+                    page_id, page_content = create_divi_page(openai_prompt, page_title, uploaded_file)
 
                 if page_id:
                     st.success(f"Divi page created successfully for Section {i + 1} with ID: {page_id}")
                     # Set the new page as the homepage
-                    set_home_page(openai_key, page_id)
+                    set_home_page(openai_prompt, page_id)
                     # Upload files to WordPress through FTP
                     if uploaded_file:
                         st.info("Uploading file to FTP...")
