@@ -1,6 +1,34 @@
 import streamlit as st
 import requests
 from ftplib import FTP
+import json
+
+def create_woocommerce_product(api_url, api_key, product_info):
+    endpoint = f"{api_url}/wp-json/wc/v3/products"
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+
+    try:
+        response = requests.post(endpoint, data=json.dumps(product_info), headers=headers)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        return {"error": str(e)}
+
+def display_product_creation_form():
+    api_url = st.text_input("WooCommerce API URL:")
+    api_key = st.text_input("WooCommerce API Key:", type="password")
+
+    product_name = st.text_input("Product Name:")
+    product_description = st.text_area("Product Description:", height=200)
+    product_price = st.number_input("Product Price:", min_value=0.01, value=0.01)
+
+    product_info = {
+        "name": product_name,
+        "description": product_description,
+        "regular_price": str(product_price),
+    }
+
+    return api_url, api_key, product_info
 
 # Placeholder functions for Divi page creation and WordPress interaction
 def create_divi_page(api_key, page_title, page_content, uploaded_file):
@@ -102,8 +130,8 @@ def main():
         st.subheader("OpenAI Key")
         openai_key = st.text_input("Enter your OpenAI key")
 
-    # Tabs for Site Creation and Divi Page Maker
-    tabs = st.radio("Select a tab:", ["Site Creation", "Divi Page Maker"])
+    # Tabs for Site Creation, Divi Page Maker, and WooCommerce Product Creator
+    tabs = st.radio("Select a tab:", ["Site Creation", "Divi Page Maker", "WooCommerce Product Creator"])
 
     if tabs == "Site Creation":
         # Site Creation Tab
@@ -170,6 +198,31 @@ def main():
                         st.info("Uploading file to FTP...")
                         upload_to_ftp(ftp_host, ftp_user, ftp_password, uploaded_file)
                         st.success("File uploaded to FTP successfully.")
+
+    elif tabs == "WooCommerce Product Creator":
+        # WooCommerce Product Creator Tab
+        st.header("WooCommerce Product Creator")
+
+        # Get product creation form values
+        api_url_wc, api_key_wc, product_info = display_product_creation_form()
+
+        if st.button("Create WooCommerce Product"):
+            # Input validation
+            if any(value == '' for value in [api_url_wc, api_key_wc] + list(product_info.values())):
+                st.warning("Please fill out all fields for product creation.")
+            else:
+                with st.spinner("Creating WooCommerce product..."):
+                    response_wc = create_woocommerce_product(api_url_wc, api_key_wc, product_info)
+
+                if "error" in response_wc:
+                    st.error(f"Error: {response_wc['error']}")
+                else:
+                    st.success("WooCommerce product created successfully!")
+                    st.write("## Product Details")
+                    st.write(f"**Product Name:** {response_wc['name']}")
+                    st.write(f"**Product ID:** {response_wc['id']}")
+                    st.write(f"**Regular Price:** {response_wc['regular_price']}")
+                    # Add additional product details as needed
 
 if __name__ == "__main__":
     main()
