@@ -1,16 +1,40 @@
 import streamlit as st
 import requests
 from ftplib import FTP
+from woocommerce import API
+import random
+import openai
+
+# Set your OpenAI API key here
+openai.api_key = "YOUR_OPENAI_API_KEY"
 
 # Placeholder functions for Divi page creation and WordPress interaction
-def create_divi_page(api_key, page_title, page_content, uploaded_file):
+def generate_openai_content(prompt):
     try:
-        # Implement logic to create a new Divi page
-        # You can use the uploaded_file parameter to handle file uploads
-        return "123"  # Placeholder ID, replace with actual logic
+        # Make an API call to OpenAI to generate content based on the prompt
+        response = openai.Completion.create(
+            engine="text-davinci-002",  # Choose the OpenAI engine based on your requirements
+            prompt=prompt,
+            max_tokens=200  # Adjust based on the desired length of generated content
+        )
+        return response.choices[0].text.strip()
+    except Exception as e:
+        st.error(f"Error generating content from OpenAI: {e}")
+        return ""
+
+def create_divi_page(api_key, page_title, uploaded_file):
+    try:
+        # Generate content using OpenAI
+        prompt = f"Create a page about {page_title}. Include relevant details and information."
+        page_content = generate_openai_content(prompt)
+
+        # Use the uploaded_file parameter to handle file uploads
+        # For demonstration purposes, we're using a placeholder ID; replace it with actual logic
+        page_id = "123"
+        return page_id, page_content
     except Exception as e:
         st.error(f"Error creating Divi page: {e}")
-        return None
+        return None, None
 
 def set_home_page(api_key, page_id):
     try:
@@ -52,6 +76,36 @@ def register_user(api_url, api_key, customer_info, site_url, site_title, members
     except requests.exceptions.RequestException as e:
         return {"error": str(e)}
 
+def generate_woocommerce_product(api_url, consumer_key, consumer_secret, product_title, product_description, product_price):
+    try:
+        wcapi = API(
+            url=api_url,
+            consumer_key=consumer_key,
+            consumer_secret=consumer_secret,
+            version="wc/v3"
+        )
+
+        # Generate a random SKU for the product
+        product_sku = f"SKU{random.randint(1000, 9999)}"
+
+        # Create the product
+        new_product_data = {
+            "name": product_title,
+            "type": "simple",
+            "regular_price": str(product_price),
+            "description": product_description,
+            "sku": product_sku,
+            "manage_stock": True,
+            "stock_quantity": 10,  # You can adjust the stock quantity
+        }
+
+        response = wcapi.post("products", new_product_data).json()
+
+        return response.get("id"), response.get("permalink")
+    except Exception as e:
+        st.error(f"Error generating WooCommerce product: {e}")
+        return None, None
+
 def display_registration_form():
     api_url = st.text_input("API URL:")
     api_key = st.text_input("API Key:", type="password")
@@ -92,18 +146,20 @@ st.markdown("""
 def main():
     st.title("AI Funnel Machine")
 
-    # Sidebar for FTP credentials and OpenAI key
+    # Sidebar for OpenAI input
+    with st.sidebar:
+        st.subheader("OpenAI Input")
+        openai_prompt = st.text_area("Enter prompt for OpenAI content generation", height=100)
+
+    # Sidebar for FTP credentials
     with st.sidebar:
         st.subheader("FTP Configuration")
         ftp_host = st.text_input("FTP Host")
         ftp_user = st.text_input("FTP User")
         ftp_password = st.text_input("FTP Password", type="password")
 
-        st.subheader("OpenAI Key")
-        openai_key = st.text_input("Enter your OpenAI key")
-
-    # Tabs for Site Creation and Divi Page Maker
-    tabs = st.radio("Select a tab:", ["Site Creation", "Divi Page Maker"])
+    # Tabs for Site Creation, Divi Page Maker, and WooCommerce Product Generator
+    tabs = st.radio("Select a tab:", ["Site Creation", "Divi Page Maker", "WooCommerce Product Generator"])
 
     if tabs == "Site Creation":
         # Site Creation Tab
@@ -151,25 +207,52 @@ def main():
 
             # Get page details for each section
             page_title = st.text_input(f"Enter the title for Section {i + 1}")
-            page_content = st.text_area(f"Enter the content for Section {i + 1}", height=200)
-
-            # File upload for each section
             uploaded_file = st.file_uploader(f"Upload file for Section {i + 1}", type=["jpg", "jpeg", "png", "pdf"])
 
             # Create Divi page for each section
             if st.button(f"Create Divi Page for Section {i + 1}"):
                 with st.spinner(f"Creating Divi Page for Section {i + 1}..."):
-                    page_id = create_divi_page(openai_key, page_title, page_content, uploaded_file)
+                    page_id, page_content = create_divi_page(openai_prompt, page_title, uploaded_file)
 
                 if page_id:
                     st.success(f"Divi page created successfully for Section {i + 1} with ID: {page_id}")
                     # Set the new page as the homepage
-                    set_home_page(openai_key, page_id)
+                    set_home_page(openai_prompt, page_id)
                     # Upload files to WordPress through FTP
                     if uploaded_file:
                         st.info("Uploading file to FTP...")
                         upload_to_ftp(ftp_host, ftp_user, ftp_password, uploaded_file)
                         st.success("File uploaded to FTP successfully.")
+
+    elif tabs == "WooCommerce Product Generator":
+        # WooCommerce Product Generator Tab
+        st.header("WooCommerce Product Generator")
+
+        # Get WooCommerce API credentials and product details
+        api_url_wc = st.text_input("WooCommerce API URL:")
+        consumer_key = st.text_input("Consumer Key:", type="password")
+        consumer_secret = st.text_input("Consumer Secret:", type="password")
+
+        product_title_wc = st.text_input("Product Title:")
+        product_description_wc = st.text_area("Product Description", height=100)
+        product_price_wc = st.number_input("Product Price:", min_value=0.01, step=0.01)
+
+        # Generate WooCommerce product
+        if st.button("Generate WooCommerce Product"):
+            # Input validation
+            if any(value == '' for value in [api_url_wc, consumer_key, consumer_secret, product_title_wc, product_description_wc]):
+                st.warning("Please fill out all fields for WooCommerce product generation.")
+            else:
+                with st.spinner("Generating WooCommerce product..."):
+                    product_id, product_permalink = generate_woocommerce_product(
+                        api_url_wc, consumer_key, consumer_secret, product_title_wc, product_description_wc, product_price_wc
+                    )
+
+                if product_id:
+                    st.success(f"WooCommerce product generated successfully with ID: {product_id}")
+                    st.write(f"**Product Permalink:** {product_permalink}")
+                else:
+                    st.error("Error generating WooCommerce product.")
 
 if __name__ == "__main__":
     main()
