@@ -114,15 +114,17 @@ st.markdown("""
 def main():
     st.title("AI Funnel Machine")
 
-    # Sidebar for FTP credentials and OpenAI key
+    # Sidebar for OpenAI input
+    with st.sidebar:
+        st.subheader("OpenAI Input")
+        openai_prompt = st.text_area("Enter prompt for OpenAI content generation", height=100)
+
+    # Sidebar for FTP credentials
     with st.sidebar:
         st.subheader("FTP Configuration")
         ftp_host = st.text_input("FTP Host")
         ftp_user = st.text_input("FTP User")
         ftp_password = st.text_input("FTP Password", type="password")
-
-        st.subheader("OpenAI Key")
-        openai_key = st.text_input("Enter your OpenAI key")
 
     # Tabs for Site Creation and Divi Page Maker
     tabs = st.radio("Select a tab:", ["Site Creation", "Divi Page Maker"])
