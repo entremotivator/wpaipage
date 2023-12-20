@@ -3,7 +3,7 @@ import requests
 from ftplib import FTP
 from woocommerce import API
 import random
-
+import openai
 
 # Set your OpenAI API key here
 openai.api_key = "YOUR_OPENAI_API_KEY"
@@ -106,25 +106,6 @@ def generate_woocommerce_product(api_url, consumer_key, consumer_secret, product
         st.error(f"Error generating WooCommerce product: {e}")
         return None, None
 
-def display_registration_form():
-    api_url = st.text_input("API URL:")
-    api_key = st.text_input("API Key:", type="password")
-
-    user_id = st.number_input("User ID:")
-    username = st.text_input("Username:")
-    password = st.text_input("Password:", type="password")
-    email = st.text_input("Email:")
-
-    customer_info = {"user_id": user_id, "username": username, "password": password, "email": email}
-
-    membership_status = st.selectbox("Membership Status", ["pending", "active", "trialing", "expired", "on-hold", "canceled"])
-    payment_status = st.selectbox("Payment Status", ["pending", "completed", "refunded", "partially-refunded", "partially-paid", "failed", "canceled"])
-
-    site_url = st.text_input("Site URL:")
-    site_title = st.text_input("Site Title:")
-
-    return api_url, api_key, customer_info, site_url, site_title, membership_status, payment_status
-
 # Apply some basic styling using HTML and CSS
 st.markdown("""
     <style>
@@ -150,6 +131,15 @@ def main():
     with st.sidebar:
         st.subheader("OpenAI Input")
         openai_prompt = st.text_area("Enter prompt for OpenAI content generation", height=100)
+
+        # WooCommerce Product Generator inputs
+        st.subheader("WooCommerce Product Generator")
+        api_url_wc = st.text_input("WooCommerce API URL:")
+        consumer_key = st.text_input("Consumer Key:", type="password")
+        consumer_secret = st.text_input("Consumer Secret:", type="password")
+        product_title_wc = st.text_input("Product Title:")
+        product_description_wc = st.text_area("Product Description", height=100)
+        product_price_wc = st.number_input("Product Price:", min_value=0.01, step=0.01)
 
     # Sidebar for FTP credentials
     with st.sidebar:
@@ -227,15 +217,6 @@ def main():
     elif tabs == "WooCommerce Product Generator":
         # WooCommerce Product Generator Tab
         st.header("WooCommerce Product Generator")
-
-        # Get WooCommerce API credentials and product details
-        api_url_wc = st.text_input("WooCommerce API URL:")
-        consumer_key = st.text_input("Consumer Key:", type="password")
-        consumer_secret = st.text_input("Consumer Secret:", type="password")
-
-        product_title_wc = st.text_input("Product Title:")
-        product_description_wc = st.text_area("Product Description", height=100)
-        product_price_wc = st.number_input("Product Price:", min_value=0.01, step=0.01)
 
         # Generate WooCommerce product
         if st.button("Generate WooCommerce Product"):
