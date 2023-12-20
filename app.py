@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+from ftplib import FTP
 
 # Placeholder functions for Divi page creation and WordPress interaction
 def create_divi_page(api_key, page_title, page_content, uploaded_file):
@@ -18,11 +19,18 @@ def set_home_page(api_key, page_id):
     except Exception as e:
         st.error(f"Error setting the homepage: {e}")
 
-def upload_to_ftp(ftp_credentials, uploaded_file):
+def upload_to_ftp(ftp_host, ftp_user, ftp_password, uploaded_file):
     try:
-        # Implement logic to upload files to WordPress through FTP
-        # Use ftp_credentials dictionary for FTP connection details
-        pass
+        # Connect to FTP server
+        with FTP(ftp_host) as ftp:
+            ftp.login(user=ftp_user, passwd=ftp_password)
+
+            # Change to the appropriate directory on the FTP server
+            ftp.cwd("/path/to/destination/directory")
+
+            # Upload the file
+            with open(uploaded_file.name, "rb") as file:
+                ftp.storbinary(f"STOR {uploaded_file.name}", file)
     except Exception as e:
         st.error(f"Error uploading files to FTP: {e}")
 
@@ -139,8 +147,10 @@ def main():
                     # Set the new page as the homepage
                     set_home_page(openai_key, page_id)
                     # Upload files to WordPress through FTP
-                    ftp_credentials = {'host': ftp_host, 'user': ftp_user, 'password': ftp_password}
-                    upload_to_ftp(ftp_credentials, uploaded_file)
+                    if uploaded_file:
+                        st.info("Uploading file to FTP...")
+                        upload_to_ftp(ftp_host, ftp_user, ftp_password, uploaded_file)
+                        st.success("File uploaded to FTP successfully.")
 
 if __name__ == "__main__":
     main()
