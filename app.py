@@ -1,16 +1,38 @@
 import streamlit as st
 import requests
 from ftplib import FTP
+import openai
+
+# Set your OpenAI API key here
+openai.api_key = "YOUR_OPENAI_API_KEY"
 
 # Placeholder functions for Divi page creation and WordPress interaction
-def create_divi_page(api_key, page_title, page_content, uploaded_file):
+def generate_openai_content(prompt):
     try:
-        # Implement logic to create a new Divi page
-        # You can use the uploaded_file parameter to handle file uploads
-        return "123"  # Placeholder ID, replace with actual logic
+        # Make an API call to OpenAI to generate content based on the prompt
+        response = openai.Completion.create(
+            engine="text-davinci-002",  # Choose the OpenAI engine based on your requirements
+            prompt=prompt,
+            max_tokens=200  # Adjust based on the desired length of generated content
+        )
+        return response.choices[0].text.strip()
+    except Exception as e:
+        st.error(f"Error generating content from OpenAI: {e}")
+        return ""
+
+def create_divi_page(api_key, page_title, uploaded_file):
+    try:
+        # Generate content using OpenAI
+        prompt = f"Create a page about {page_title}. Include relevant details and information."
+        page_content = generate_openai_content(prompt)
+
+        # Use the uploaded_file parameter to handle file uploads
+        # For demonstration purposes, we're using a placeholder ID; replace it with actual logic
+        page_id = "123"
+        return page_id, page_content
     except Exception as e:
         st.error(f"Error creating Divi page: {e}")
-        return None
+        return None, None
 
 def set_home_page(api_key, page_id):
     try:
@@ -151,15 +173,12 @@ def main():
 
             # Get page details for each section
             page_title = st.text_input(f"Enter the title for Section {i + 1}")
-            page_content = st.text_area(f"Enter the content for Section {i + 1}", height=200)
-
-            # File upload for each section
             uploaded_file = st.file_uploader(f"Upload file for Section {i + 1}", type=["jpg", "jpeg", "png", "pdf"])
 
             # Create Divi page for each section
             if st.button(f"Create Divi Page for Section {i + 1}"):
                 with st.spinner(f"Creating Divi Page for Section {i + 1}..."):
-                    page_id = create_divi_page(openai_key, page_title, page_content, uploaded_file)
+                    page_id, page_content = create_divi_page(openai_key, page_title, uploaded_file)
 
                 if page_id:
                     st.success(f"Divi page created successfully for Section {i + 1} with ID: {page_id}")
